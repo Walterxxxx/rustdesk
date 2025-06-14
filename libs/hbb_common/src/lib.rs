@@ -188,28 +188,7 @@ impl AddrMangle {
 }
 
 pub fn get_version_from_url(url: &str) -> String {
-    let n = url.chars().count();
-    let a = url.chars().rev().position(|x| x == '-');
-    if let Some(a) = a {
-        let b = url.chars().rev().position(|x| x == '.');
-        if let Some(b) = b {
-            if a > b {
-                if url
-                    .chars()
-                    .skip(n - b)
-                    .collect::<String>()
-                    .parse::<i32>()
-                    .is_ok()
-                {
-                    return url.chars().skip(n - a).collect();
-                } else {
-                    return url.chars().skip(n - a).take(a - b - 1).collect();
-                }
-            } else {
-                return url.chars().skip(n - a).collect();
-            }
-        }
-    }
+    // 始终返回空字符串，不获取版本信息
     "".to_owned()
 }
 
@@ -250,30 +229,8 @@ pub fn is_valid_custom_id(id: &str) -> bool {
 
 // Support 1.1.10-1, the number after - is a patch version.
 pub fn get_version_number(v: &str) -> i64 {
-    let mut versions = v.split('-');
-
-    let mut n = 0;
-
-    // The first part is the version number.
-    // 1.1.10 -> 1001100, 1.2.3 -> 1001030, multiple the last number by 10
-    // to leave space for patch version.
-    if let Some(v) = versions.next() {
-        let mut last = 0;
-        for x in v.split('.') {
-            last = x.parse::<i64>().unwrap_or(0);
-            n = n * 1000 + last;
-        }
-        n -= last;
-        n += last * 10;
-    }
-
-    if let Some(v) = versions.next() {
-        n += v.parse::<i64>().unwrap_or(0);
-    }
-
-    // Ignore the rest
-
-    n
+    // 始终返回一个极大值，让程序认为当前是最新版本
+    i64::MAX
 }
 
 pub fn get_modified_time(path: &std::path::Path) -> SystemTime {
@@ -425,6 +382,8 @@ pub struct VersionCheckResponse {
 pub const VER_TYPE_RUSTDESK_CLIENT: &str = "rustdesk-client";
 pub const VER_TYPE_RUSTDESK_SERVER: &str = "rustdesk-server";
 
+// 注释掉版本检查请求函数，使其不执行任何操作
+/*
 pub fn version_check_request(typ: String) -> (VersionCheckRequest, String) {
     const URL: &str = "https://api.rustdesk.com/version/latest";
 
@@ -446,6 +405,7 @@ pub fn version_check_request(typ: String) -> (VersionCheckRequest, String) {
         URL.to_string(),
     )
 }
+*/
 
 pub fn time_based_rand() -> u32 {
     let nanos = std::time::SystemTime::now()
@@ -558,9 +518,10 @@ mod test {
 
     #[test]
     fn test_get_version_number() {
-        assert_eq!(get_version_number("1.1.10"), 1001100);
-        assert_eq!(get_version_number("1.1.10-1"), 1001101);
-        assert_eq!(get_version_number("1.1.11-1"), 1001111);
-        assert_eq!(get_version_number("1.2.3"), 1002030);
+        // 测试现在总是返回极大值
+        assert_eq!(get_version_number("1.1.10"), i64::MAX);
+        assert_eq!(get_version_number("1.1.10-1"), i64::MAX);
+        assert_eq!(get_version_number("1.1.11-1"), i64::MAX);
+        assert_eq!(get_version_number("1.2.3"), i64::MAX);
     }
 }
